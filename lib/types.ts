@@ -4,6 +4,7 @@ import { AutocratV0 } from './idl/autocrat_v0';
 import { AutocratV0 as AutocratV0_1 } from './idl/autocrat_v0.1';
 import { AutocratV0 as AutocratV0_2 } from './idl/autocrat_v0.2';
 import { AutocratV0 as AutocratV0_3 } from './idl/autocrat_v0.3';
+import { AutocratV0Manifesto as AutocratV0Manifesto_1 } from './idl/autocrat_v0_manifesto';
 import { OpenbookTwapV0_1 } from './idl/openbook_twap_v0.1';
 import { OpenbookTwapV0_2 } from './idl/openbook_twap_v0.2';
 import { OpenbookV2 } from './idl/openbook_v2';
@@ -34,8 +35,8 @@ export type DaoState = MergeWithOptionalFields<
   IdlAccounts<AutocratV0_3>['dao']
 >;
 export type ProposalAccount = MergeWithOptionalFields<
-  IdlAccounts<AutocratV0>['proposal'],
-  IdlAccounts<AutocratV0_1>['proposal']
+  IdlAccounts<AutocratV0Manifesto_1>['proposal'],
+  IdlAccounts<AutocratV0Manifesto_1>['proposal']
 >;
 export type ProposalInstruction = MergeWithOptionalFields<
   IdlTypes<AutocratV0>['ProposalInstruction'],
