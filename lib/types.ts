@@ -4,7 +4,7 @@ import { AutocratV0 } from './idl/autocrat_v0';
 import { AutocratV0 as AutocratV0_1 } from './idl/autocrat_v0.1';
 import { AutocratV0 as AutocratV0_2 } from './idl/autocrat_v0.2';
 import { AutocratV0 as AutocratV0_3 } from './idl/autocrat_v0.3';
-import { AutocratV0Manifesto as AutocratV0Manifesto_1 } from './idl/autocrat_v0_manifesto';
+import { AutocratV0Manifesto as AutocratV0Manifesto_1 } from './idl/autocrat_v0.1_manifesto';
 import { OpenbookTwapV0_1 } from './idl/openbook_twap_v0.1';
 import { OpenbookTwapV0_2 } from './idl/openbook_twap_v0.2';
 import { OpenbookV2 } from './idl/openbook_v2';
