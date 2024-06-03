@@ -138,18 +138,17 @@ export function useInitializeProposal() {
     const passMarketTx = new Transaction().add(...openbookPassMarket.instructions);
     const failMarketTx = new Transaction().add(...openbookFailMarket.instructions);
 
-    const blockhash = await connection.getLatestBlockhash();
+    const latestBlockhash = await connection.getLatestBlockhash();
     passMarketTx.feePayer = wallet.publicKey!;
-    passMarketTx.recentBlockhash = blockhash.blockhash;
+    passMarketTx.recentBlockhash = latestBlockhash.blockhash;
     failMarketTx.feePayer = wallet.publicKey!;
-    failMarketTx.recentBlockhash = blockhash.blockhash;
+    failMarketTx.recentBlockhash = latestBlockhash.blockhash;
 
     passMarketTx.sign(...openbookPassMarket.signers);
     failMarketTx.sign(...openbookFailMarket.signers);
 
     const txs = [passMarketTx, failMarketTx].filter(Boolean) as Transaction[];
     const signedTxs = await wallet.signAllTransactions(txs);
-    const latestBlockhash = await connection.getLatestBlockhash();
     await Promise.all(
       signedTxs.map(async (tx) => {
         const signature = await connection.sendRawTransaction(tx.serialize(), {
@@ -217,13 +216,12 @@ export function useInitializeProposal() {
       createFailTwapMarketIx,
     );
 
-    const blockhash = await connection.getLatestBlockhash();
+    const latestBlockhash = await connection.getLatestBlockhash();
     twapsTx.feePayer = wallet.publicKey!;
-    twapsTx.recentBlockhash = blockhash.blockhash;
+    twapsTx.recentBlockhash = latestBlockhash.blockhash;
 
     const txs = [twapsTx].filter(Boolean) as Transaction[];
     const signedTxs = await wallet.signAllTransactions(txs);
-    const latestBlockhash = await connection.getLatestBlockhash();
 
     await Promise.all(
       signedTxs.map(async (tx) => {
@@ -288,14 +286,14 @@ export function useInitializeProposal() {
           .instruction(),
       );
 
-      const blockhash = await connection.getLatestBlockhash();
+      const latestBlockhash = await connection.getLatestBlockhash();
       initProposalTx.feePayer = wallet.publicKey!;
-      initProposalTx.recentBlockhash = blockhash.blockhash;
+      initProposalTx.recentBlockhash = latestBlockhash.blockhash;
       initProposalTx.sign(proposalKeypair);
 
       const txs = [initProposalTx];
       const signedTxs = await wallet.signAllTransactions(txs);
-      const latestBlockhash = await connection.getLatestBlockhash();
+
       await Promise.all(
         signedTxs.map(async (tx) => {
           const signature = await connection.sendRawTransaction(tx.serialize(), {
