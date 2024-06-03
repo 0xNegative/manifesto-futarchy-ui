@@ -38,7 +38,7 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
   const provider = useProvider();
   const [programVersion, setProgramVersion] = useLocalStorage<ProgramVersion>({
     key: 'program_version',
-    defaultValue: AUTOCRAT_VERSIONS[0],
+    defaultValue: AUTOCRAT_VERSIONS[2],
     serialize: (value) => String(AUTOCRAT_VERSIONS.indexOf(value)),
     deserialize: (value) => AUTOCRAT_VERSIONS[Number(value)],
   });
