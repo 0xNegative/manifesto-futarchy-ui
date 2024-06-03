@@ -13,13 +13,7 @@ import { useTransactionSender } from './useTransactionSender';
 export function useInitializeProposal() {
   const { connection } = useConnection();
   const sender = useTransactionSender();
-  const {
-    autocratProgram: program,
-    daoKey,
-    daoTreasuryKey,
-    daoState,
-    daoTokens,
-  } = useAutocrat();
+  const { autocratProgram: program, daoKey, daoTreasuryKey, daoState, daoTokens } = useAutocrat();
   const { initializeVault } = useConditionalVault();
   const wallet = useWallet();
   const openbook = useOpenbook().program;
@@ -155,16 +149,22 @@ export function useInitializeProposal() {
 
     const txs = [passMarketTx, failMarketTx].filter(Boolean) as Transaction[];
     const signedTxs = await wallet.signAllTransactions(txs);
-    // Using loops here to make sure transaction are executed in the correct order
-    // eslint-disable-next-line no-restricted-syntax
-    for (const tx of signedTxs) {
-      // eslint-disable-next-line no-await-in-loop
-      await connection.confirmTransaction(
-        // eslint-disable-next-line no-await-in-loop
-        await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true }),
-        'processed',
-      );
-    }
+    const latestBlockhash = await connection.getLatestBlockhash();
+    await Promise.all(
+      signedTxs.map(async (tx) => {
+        const signature = await connection.sendRawTransaction(tx.serialize(), {
+          skipPreflight: true,
+        });
+        return connection.confirmTransaction(
+          {
+            signature,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          },
+          'processed',
+        );
+      }),
+    );
     setMarkets({ pass: openbookPassMarketKP, fail: openbookFailMarketKP });
   }, [daoKey, program, connection, wallet, daoTokens, vaults]);
 
@@ -223,16 +223,23 @@ export function useInitializeProposal() {
 
     const txs = [twapsTx].filter(Boolean) as Transaction[];
     const signedTxs = await wallet.signAllTransactions(txs);
-    // Using loops here to make sure transaction are executed in the correct order
-    // eslint-disable-next-line no-restricted-syntax
-    for (const tx of signedTxs) {
-      // eslint-disable-next-line no-await-in-loop
-      await connection.confirmTransaction(
-        // eslint-disable-next-line no-await-in-loop
-        await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true }),
-        'processed',
-      );
-    }
+    const latestBlockhash = await connection.getLatestBlockhash();
+
+    await Promise.all(
+      signedTxs.map(async (tx) => {
+        const signature = await connection.sendRawTransaction(tx.serialize(), {
+          skipPreflight: true,
+        });
+        return connection.confirmTransaction(
+          {
+            signature,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          },
+          'processed',
+        );
+      }),
+    );
     setTwaps({ pass: openbookTwapPassMarket, fail: openbookTwapFailMarket });
   }, [daoKey, program, connection, wallet, daoTokens]);
 
@@ -288,16 +295,22 @@ export function useInitializeProposal() {
 
       const txs = [initProposalTx];
       const signedTxs = await wallet.signAllTransactions(txs);
-      // Using loops here to make sure transaction are executed in the correct order
-      // eslint-disable-next-line no-restricted-syntax
-      for (const tx of signedTxs) {
-        // eslint-disable-next-line no-await-in-loop
-        await connection.confirmTransaction(
-          // eslint-disable-next-line no-await-in-loop
-          await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true }),
-          'confirmed',
-        );
-      }
+      const latestBlockhash = await connection.getLatestBlockhash();
+      await Promise.all(
+        signedTxs.map(async (tx) => {
+          const signature = await connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: true,
+          });
+          return connection.confirmTransaction(
+            {
+              signature,
+              blockhash: latestBlockhash.blockhash,
+              lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+            },
+            'confirmed',
+          );
+        }),
+      );
     },
     [daoKey, program, connection, wallet, daoTokens],
   );
