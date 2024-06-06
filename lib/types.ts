@@ -1,9 +1,5 @@
 import { Idl, IdlAccounts, IdlTypes } from '@coral-xyz/anchor';
 import { Connection, PublicKey, Signer, Transaction } from '@solana/web3.js';
-import { AutocratV0 } from './idl/autocrat_v0';
-import { AutocratV0 as AutocratV0_1 } from './idl/autocrat_v0.1';
-import { AutocratV0 as AutocratV0_2 } from './idl/autocrat_v0.2';
-import { AutocratV0 as AutocratV0_3 } from './idl/autocrat_v0.3';
 import { AutocratV0Manifesto as AutocratV0Manifesto_1 } from './idl/autocrat_v0.1_manifesto';
 import { OpenbookTwapV0_1 } from './idl/openbook_twap_v0.1';
 import { OpenbookTwapV0_2 } from './idl/openbook_twap_v0.2';
@@ -19,29 +15,20 @@ type MergeWithOptionalFields<T, U> = {
   [K in keyof Omit<T, keyof U>]?: NonNullable<T[K]>;
 };
 export type AccountWithKey<T> = { publicKey: PublicKey; account: T };
-export type ProgramVersion = { label: string; programId: PublicKey; idl: Idl, dao: string };
-export type AutocratProgram = AutocratV0 | AutocratV0_1 | AutocratV0_2 | AutocratV0_3;
+export type ProgramVersion = { label: string; programId: PublicKey; idl: Idl; dao: string };
+export type AutocratProgram = AutocratV0Manifesto_1;
 export type ConditionalVault = ConditionalVaultV0 | ConditionalVaultV0_2;
-export type DaoStateV0_1 = MergeWithOptionalFields<
-  IdlAccounts<AutocratV0>['dao'],
-  IdlAccounts<AutocratV0_1>['dao']
->;
+export type DaoStateV0_1 = IdlAccounts<AutocratV0Manifesto_1>['dao'];
 export type DaoStateV0_2 = MergeWithOptionalFields<
   DaoStateV0_1,
-  IdlAccounts<AutocratV0_2>['dao']
+  IdlAccounts<AutocratV0Manifesto_1>['dao']
 >;
 export type DaoState = MergeWithOptionalFields<
   DaoStateV0_2,
-  IdlAccounts<AutocratV0_3>['dao']
+  IdlAccounts<AutocratV0Manifesto_1>['dao']
 >;
-export type ProposalAccount = MergeWithOptionalFields<
-  IdlAccounts<AutocratV0Manifesto_1>['proposal'],
-  IdlAccounts<AutocratV0Manifesto_1>['proposal']
->;
-export type ProposalInstruction = MergeWithOptionalFields<
-  IdlTypes<AutocratV0>['ProposalInstruction'],
-  IdlTypes<AutocratV0_1>['ProposalInstruction']
->;
+export type ProposalAccount = IdlAccounts<AutocratV0Manifesto_1>['proposal'];
+export type ProposalInstruction = IdlTypes<AutocratV0Manifesto_1>['ProposalInstruction'];
 export type TwapMarketAccount = MergeWithOptionalFields<
   IdlAccounts<OpenbookTwapV0_1>['twapMarket'],
   IdlAccounts<OpenbookTwapV0_2>['twapMarket']

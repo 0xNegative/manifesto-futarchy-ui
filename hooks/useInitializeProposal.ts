@@ -28,11 +28,18 @@ export function useInitializeProposal() {
       const initProposalTx = new Transaction().add(
         await program.account.proposal.createInstruction(proposalKeypair, 1500),
         await program.methods
-          .initializeProposal(url, instruction)
+          .initializeProposal({
+            descriptionUrl: url,
+            instruction,
+            passLpTokensToLock: 0, // @TODO 0xNegative
+            failLpTokensToLock: 0, // @TODO 0xNegative
+            nonce: 0, // @TODO 0xNegative
+          })
           .accounts({
             proposal: proposalKeypair.publicKey,
             dao: daoKey,
-            daoTreasury: daoTreasuryKey,
+            failAmm,
+            passAmm,
             proposer: wallet.publicKey,
           })
           .instruction(),
