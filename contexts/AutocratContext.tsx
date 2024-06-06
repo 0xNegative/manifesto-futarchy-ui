@@ -1,19 +1,29 @@
-import React, {
-  ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { Program } from '@coral-xyz/anchor';
+import React, { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Program, AnchorProvider } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
 import { useLocalStorage } from '@mantine/hooks';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useProvider } from '@/hooks/useProvider';
-import { AUTOCRAT_VERSIONS, staticTokens, devnetTokens, mainnetTokens, DAOS } from '@/lib/constants';
-import { AutocratProgram, DaoState, ProgramVersion, Proposal, TokensDict, Token } from '../lib/types';
+import {
+  AUTOCRAT_VERSIONS,
+  staticTokens,
+  devnetTokens,
+  mainnetTokens,
+  DAOS,
+} from '@/lib/constants';
+import {
+  AutocratProgram,
+  DaoState,
+  ProgramVersion,
+  Proposal,
+  TokensDict,
+  Token,
+} from '../lib/types';
 import { Networks, useNetworkConfiguration } from '../hooks/useNetworkConfiguration';
+import { getTokenMetadata } from '@/utils/token';
+import { AMM_PROGRAM_ID } from '@/sdk/src/constants';
+import { AmmClient, SwapType } from '@/sdk/src/AmmClient';
 
 export interface AutocratContext {
   daoKey?: PublicKey;
@@ -22,23 +32,36 @@ export interface AutocratContext {
   daoTokens?: TokensDict;
   proposals?: Proposal[];
   autocratProgram?: Program<AutocratProgram>;
+  ammClient?: AmmClient;
   programVersion?: ProgramVersion;
   setProgramVersion: (e: number) => void;
+  createAmm: (
+    pof: string,
+    uri: string,
+    proposalNumber: number,
+    symbol: string,
+    a: number,
+  ) => Promise<void>;
+  swap: (swapType: SwapType, inputAmount: number, outputAmountMin: number) => Promise<void>;
 }
+
 export const contextAutocrat = createContext<AutocratContext>({
-  setProgramVersion: () => { },
+  setProgramVersion: () => {},
+  createAmm: async () => {},
+  swap: async () => {},
 });
+
 export const useAutocrat = () => {
   const context = useContext<AutocratContext>(contextAutocrat);
   return context;
 };
 
-export function AutocratProvider({ children }: { children: ReactNode; }) {
+export function AutocratProvider({ children }: { children: ReactNode }) {
   const { network } = useNetworkConfiguration();
   const provider = useProvider();
   const [programVersion, setProgramVersion] = useLocalStorage<ProgramVersion>({
     key: 'program_version',
-    defaultValue: AUTOCRAT_VERSIONS[2],
+    defaultValue: AUTOCRAT_VERSIONS[0],
     serialize: (value) => String(AUTOCRAT_VERSIONS.indexOf(value)),
     deserialize: (value) => AUTOCRAT_VERSIONS[Number(value)],
   });
@@ -47,7 +70,16 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
 
   const autocratProgram = useMemo(
     () => new Program<AutocratProgram>(idl as AutocratProgram, programId, provider),
-    [programId.toString(), !!provider, network]
+    [programId.toString(), !!provider, network],
+  );
+
+  const ammClient = useMemo(
+    () =>
+      AmmClient.createClient({
+        provider: provider as AnchorProvider,
+        ammProgramId: AMM_PROGRAM_ID,
+      }),
+    [provider, network],
   );
 
   // TODO: We need to surface an option to select a DAO, so there's
@@ -64,9 +96,7 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
 
   // TODO: THIS NEEDS TO BE HANDLED WHEN MULTI DAO
   // Filter against our list of DAOs
-  let selectedDao = daos?.find(
-    (dao) => dao.publicKey.toString() === DAOS[0].publicKey.toString()
-  );
+  let selectedDao = daos?.find((dao) => dao.publicKey.toString() === DAOS[0].publicKey.toString());
 
   // Need to use any DAO even if we didn't get a match from our list
   if (!selectedDao && daos) {
@@ -121,57 +151,50 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
     },
   });
 
-  // TODO: The goal here is the fetch the token data to enrich it.
-  // all we need is a URI for display within the application
-  // NOTE: This is not working.
-  // const tokenMetadata = useQueries({
-  //   queries: [
-  //     {
-  //       queryKey: ['daoBase', connection.rpcEndpoint],
-  //       queryFn: async () => {
-  //         if (daoTokens && daoTokens.baseToken) {
-  //           return getTokenMetadata(
-  //             connection,
-  //             daoTokens.baseToken.publicKey,
-  //             undefined,
-  //             TOKEN_PROGRAM_ID
-  //           );
-  //         }
-  //       },
-  //       enabled: !!daoTokens.baseToken,
-  //       refetchOnMount: true,
-  //     },
-  //     {
-  //       queryKey: ['daoQuote', connection.rpcEndpoint],
-  //       queryFn: async () => {
-  //         if (daoTokens && daoTokens.quoteToken) {
-  //           return getTokenMetadata(
-  //             connection,
-  //             daoTokens.quoteToken.publicKey,
-  //             undefined,
-  //             TOKEN_PROGRAM_ID
-  //           );
-  //         }
-  //       },
-  //       enabled: !!daoTokens.quoteToken,
-  //       refetchOnMount: true,
-  //     },
-  //   ],
-  // });
+  useQueries({
+    queries: [
+      {
+        queryKey: ['daoBase', provider.connection.rpcEndpoint],
+        queryFn: async () => {
+          if (daoTokens && daoTokens.baseToken) {
+            return getTokenMetadata(
+              provider.connection,
+              daoTokens.baseToken.publicKey,
+              undefined,
+              TOKEN_PROGRAM_ID,
+            );
+          }
+        },
+        enabled: !!daoTokens.baseToken,
+        refetchOnMount: true,
+      },
+      {
+        queryKey: ['daoQuote', provider.connection.rpcEndpoint],
+        queryFn: async () => {
+          if (daoTokens && daoTokens.quoteToken) {
+            return getTokenMetadata(
+              provider.connection,
+              daoTokens.quoteToken.publicKey,
+              undefined,
+              TOKEN_PROGRAM_ID,
+            );
+          }
+        },
+        enabled: !!daoTokens.quoteToken,
+        refetchOnMount: true,
+      },
+    ],
+  });
 
   // We need to wait for the DAO state to be updated and fetched to pull from it
   // and build our actually used tokens.
   useEffect(() => {
     if (daoState) {
-      let daoTokenPublicKey = daoState?.metaMint!;
-      if (programVersion?.label === 'V0.3') {
-        // Stub in to pull instead of metaMint, tokenMint
-        daoTokenPublicKey = daoState?.tokenMint!;
-      }
+      const daoTokenPublicKey = daoState?.tokenMint!;
 
       // This fetches and compares across the token list we maintain
       const daoToken = Object.entries(defaultTokens).filter(
-        (token) => token[1].publicKey.toString() === daoTokenPublicKey.toString()
+        (token) => token[1].publicKey.toString() === daoTokenPublicKey.toString(),
       );
 
       // Our "base" token which historically was called META, and in other version TOKEN
@@ -199,7 +222,7 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
   }, [selectedDao, programVersion.label, network, daoState, defaultTokens]);
 
   useEffect(() => {
-    const props = ((allProposals) || []).sort((a, b) =>
+    const props = (allProposals || []).sort((a, b) =>
       a.account.number < b.account.number ? 1 : -1,
     );
 
@@ -211,6 +234,88 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
     setProposals(_proposals);
   }, [allProposals, programVersion.label, network]);
 
+  const createAmm = async (
+    pof: string,
+    uri: string,
+    proposalNumber: number,
+    symbol: string,
+    a: number,
+  ) => {
+    if (
+      !autocratProgram ||
+      !daoState ||
+      !daoTokens?.baseToken ||
+      !daoTokens?.quoteToken ||
+      !provider.wallet
+    ) {
+      return;
+    }
+
+    // Check that the base and quote mints are different
+    if (daoTokens.baseToken.publicKey.equals(daoTokens.quoteToken.publicKey)) {
+      throw new Error('Base and quote mints must be different');
+    }
+
+    // Check that the base mint has a supply of 0
+    const baseMint = await autocratProgram.account.mint.fetch(daoTokens.baseToken.publicKey);
+    if (baseMint.supply !== 0) {
+      throw new Error('Base mint must have a supply of 0');
+    }
+
+    try {
+      const [proposalAddress] = await PublicKey.findProgramAddress(
+        [Buffer.from('proposal'), Buffer.from(proposalNumber.toString())],
+        autocratProgram.programId,
+      );
+      await ammClient.createAmm(
+        proposalAddress,
+        daoTokens.baseToken.publicKey,
+        daoTokens.quoteToken.publicKey,
+        daoState.twapInitialObservation,
+        pof,
+        uri,
+        proposalNumber,
+        daoTokens.baseToken.publicKey,
+        daoTokens.quoteToken.publicKey,
+        a,
+        daoState.twapMaxObservationChangePerUpdate,
+      );
+    } catch (err) {
+      console.error('Error creating AMM:', err);
+      throw err;
+    }
+  };
+
+  const swap = async (swapType: SwapType, inputAmount: number, outputAmountMin: number) => {
+    if (
+      !autocratProgram ||
+      !daoState ||
+      !daoTokens?.baseToken ||
+      !daoTokens?.quoteToken ||
+      !provider.wallet
+    ) {
+      return;
+    }
+
+    const [ammPublicKey] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from('amm__'),
+        daoTokens.baseToken.publicKey.toBuffer(),
+        daoTokens.quoteToken.publicKey.toBuffer(),
+      ],
+      AMM_PROGRAM_ID,
+    );
+
+    const amm = await ammClient.getAmm(ammPublicKey);
+
+    try {
+      await ammClient.swap(amm.publicKey, swapType, inputAmount, outputAmountMin);
+    } catch (err) {
+      console.error('Error swapping tokens:', err);
+      throw err;
+    }
+  };
+
   return (
     <contextAutocrat.Provider
       value={{
@@ -220,11 +325,14 @@ export function AutocratProvider({ children }: { children: ReactNode; }) {
         daoTokens,
         proposals,
         autocratProgram,
+        ammClient,
         programVersion,
         setProgramVersion: (n) =>
           setProgramVersion(
             n < AUTOCRAT_VERSIONS.length ? AUTOCRAT_VERSIONS[n] : AUTOCRAT_VERSIONS[0],
           ),
+        createAmm,
+        swap,
       }}
     >
       {children}
