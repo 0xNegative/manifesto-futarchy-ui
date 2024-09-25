@@ -15,15 +15,7 @@ export function CreateProposalCard() {
   const { connection } = useConnection();
   const wallet = useWallet();
   const { daoState } = useAutocrat();
-  const {
-    vaults,
-    markets,
-    twaps,
-    initializeVaults,
-    initializeMarkets,
-    initializeTwaps,
-    initializeProposal,
-  } = useInitializeProposal();
+  const { initializeProposal } = useInitializeProposal();
   const [url, setUrl] = useState<string>('https://www.eff.org/cyberspace-independence');
   const [selectedInstruction, setSelectedInstruction] = useState<InstructionAction>(
     instructionGroups[0].actions[0],
@@ -141,18 +133,7 @@ export function CreateProposalCard() {
                 />
               ))}
             </Fieldset>
-            <Button onClick={initializeVaults} disabled={!!vaults}>
-              Create vaults
-            </Button>
-            <Button onClick={initializeMarkets} disabled={!!markets || !vaults}>
-              Create markets
-            </Button>
-            <Button onClick={initializeTwaps} disabled={!!twaps || !markets || !vaults}>
-              Create TWAPs
-            </Button>
-            <Button onClick={handleCreate} disabled={!twaps || !markets || !vaults}>
-              Create proposal
-            </Button>
+            <Button onClick={handleCreate}>Create proposal</Button>
             {(nextProposalCost.value() || 0) > 0 ? (
               <Stack gap="0">
                 <Text fw="lighter">Your balance: {balance?.format(NUMERAL_FORMAT)} $SOL</Text>

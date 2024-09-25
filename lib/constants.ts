@@ -19,6 +19,7 @@ const AUTOCRAT_V0_IDL: AutocratProgram = require('@/lib/idl/autocrat_v0.json');
 const AUTOCRAT_V0_1_IDL: AutocratProgram = require('@/lib/idl/autocrat_v0.1.json');
 const AUTOCRAT_V0_2_IDL: AutocratProgram = require('@/lib/idl/autocrat_v0.2.json');
 const AUTOCRAT_V0_3_IDL: AutocratProgram = require('@/lib/idl/autocrat_v0.3.json');
+const AUTOCRAT_V0_1_MANIFESTO_IDL: AutocratProgram = require('@/lib/idl/autocrat_v0.1_manifesto.json');
 
 // TODO: Need to stub in DaoStateWithKey
 export const DAOS: any[] = [
@@ -32,9 +33,20 @@ export const DAOS: any[] = [
     name: 'FutureDAO',
     icon: 'futureToken.png',
   },
+  {
+    publicKey: new PublicKey('8tanoHEyJEQgaasEkv1DxN6umYNWDotbaEpuzstcEufb'), // change
+    name: 'Manifesto',
+    icon: 'manifestoToken.png',
+  },
 ];
 
 export const AUTOCRAT_VERSIONS: ProgramVersion[] = [
+  {
+    label: 'V0.1-manifesto',
+    programId: new PublicKey('FuTPR6ScKMPHtZFwacq9qrtf9VjscawNEFTb2wSYr1gY'), // change
+    idl: AUTOCRAT_V0_1_MANIFESTO_IDL,
+    dao: 'manifesto',
+  },
   {
     label: 'V0.3',
     programId: new PublicKey('FuTPR6ScKMPHtZFwacq9qrtf9VjscawNEFTb2wSYr1gY'),
